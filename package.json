@@ -1,0 +1,28 @@
+{
+  "name": "hotel-feedback-saas",
+  "version": "1.0.0",
+  "description": "Enterprise Hotel Customer Feedback SaaS Platform with Cryptographic QR Code Dining Experience",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "dev:backend": "npm start --workspace=backend",
+    "build": "npm run build --workspace=frontend",
+    "test": "npm run test-all --workspace=backend",
+    "migrate": "npm run migrate --workspace=backend"
+  },
+  "keywords": [
+    "hotel",
+    "feedback",
+    "saas",
+    "qr-code",
+    "react",
+    "express",
+    "postgresql"
+  ],
+  "author": "Saravana Bhavan Hotel Management",
+  "license": "UNLICENSED"
+}

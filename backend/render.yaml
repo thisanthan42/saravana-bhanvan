@@ -1,0 +1,32 @@
+# ==============================================================
+# Render Blueprint Specification
+# Deploys Saravana Bhavan Hotel Backend + PostgreSQL on Render
+# ==============================================================
+services:
+  - type: web
+    name: saravana-bhavan-backend
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: saravana-bhavan-db
+          property: connectionString
+      - key: CORS_ORIGIN
+        sync: false # Set to your deployed frontend domain (e.g. https://your-app.vercel.app)
+      - key: PUBLIC_APP_URL
+        sync: false # Set to your deployed frontend domain
+      - key: JWT_SECRET
+        generateValue: true
+
+databases:
+  - name: saravana-bhavan-db
+    databaseName: saravana_bhavan_db
+    user: saravana_admin
+    plan: free

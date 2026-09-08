@@ -106,35 +106,38 @@ app.get('/', (req, res) => {
     });
   }
 
-  // Otherwise serve rich HTML dashboard
+  // Otherwise render rich, interactive HTML Dashboard for browser visitors
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Saravana Bhavan Feedback Engine API</title>
+  <title>Saravana Bhavan — Backend API Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-      background: #FDFBF7;
+      background: #FAF7F2;
       color: #1C1917;
-      line-height: 1.5;
-      padding: 40px 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px 16px;
     }
     .container {
-      max-width: 780px;
-      margin: 0 auto;
+      max-width: 720px;
+      width: 100%;
     }
     .header {
       background: white;
-      border: 1px solid #E7E5E4;
+      border: 1px solid #FDE68A;
       border-radius: 24px;
-      padding: 36px;
-      box-shadow: 0 10px 30px -10px rgba(0,0,0,0.05);
+      padding: 28px;
+      box-shadow: 0 4px 20px -2px rgba(120, 53, 15, 0.08);
       text-align: center;
       position: relative;
       overflow: hidden;

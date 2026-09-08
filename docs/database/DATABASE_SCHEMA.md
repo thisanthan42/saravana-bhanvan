@@ -1,4 +1,4 @@
-# Database Schema & Entity Relationships
+﻿# Database Schema & Entity Relationships
 
 ```text
 businesses (1) ───< branches (N) ───< tables (N) ─── (1) qr_codes

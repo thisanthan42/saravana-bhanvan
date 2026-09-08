@@ -69,7 +69,8 @@ export default function StarRating({ value, onChange, hasError }) {
 
       {/* Dynamic Feedback Description or Prompt */}
       <div className="mt-3 min-h-[32px] flex items-center justify-between">
-        {ratingDetails ? (\n          <div className="flex items-center gap-2 text-xs sm:text-sm font-medium animate-fade-in">
+        {ratingDetails ? (
+          <div className="flex items-center gap-2 text-xs sm:text-sm font-medium animate-fade-in">
             <span className="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 font-bold">
               {activeRating} Star{activeRating > 1 ? 's' : ''} • {ratingDetails.label}
             </span>

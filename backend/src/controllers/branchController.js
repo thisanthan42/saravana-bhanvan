@@ -11,11 +11,11 @@ export const BranchController = {
       if (req.manager.role === 'super_admin' || req.manager.role === 'owner') {
         const sql = `
           SELECT b.id, b.business_id, b.name, b.code, b.address, b.active, b.created_at,
-                 COUNT(DISTINCT t.id) AS total_tables,
-                 COUNT(DISTINCT fb.id) AS total_feedback
+                 COUNT(DISTINCT t.id)::int AS table_count,
+                 COUNT(DISTINCT qr.id)::int AS qr_count
           FROM branches b
           LEFT JOIN tables t ON t.branch_id = b.id
-          LEFT JOIN feedback fb ON fb.branch_id = CAST(b.id AS VARCHAR)
+          LEFT JOIN qr_codes qr ON qr.table_id = t.id
           GROUP BY b.id
           ORDER BY b.id ASC;
         `;
@@ -27,7 +27,7 @@ export const BranchController = {
         });
       }
 
-      // Branch Manager: return only their authorized branches
+      // Branch Manager: Return only authorized branches
       return res.status(200).json({
         success: true,
         count: req.manager.authorizedBranches.length,

@@ -218,3 +218,4 @@ export async function createManager({ name, email, password, role = 'manager', b
     body: JSON.stringify({ name, email, password, role, branchIds }),
   });
 }
+

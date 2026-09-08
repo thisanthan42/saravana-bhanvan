@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Shared API Response Contracts & JSDoc Type Signatures
  *
  * @typedef {Object} ApiResponse

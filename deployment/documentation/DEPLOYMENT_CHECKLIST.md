@@ -1,4 +1,4 @@
-# Pre-Flight Deployment Checklist
+﻿# Pre-Flight Deployment Checklist
 
 - [ ] All code committed to Git on branch `main`.
 - [ ] Managed PostgreSQL database provisioned (Neon, Supabase, or Render).

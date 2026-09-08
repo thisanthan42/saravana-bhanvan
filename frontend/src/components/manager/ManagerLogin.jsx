@@ -62,7 +62,8 @@ export default function ManagerLogin({ onLoginSuccess }) {
         <div className="bg-white rounded-3xl p-7 sm:p-8 shadow-xl border border-amber-200/60 backdrop-blur-xs">
           <form onSubmit={handleSubmit} className="space-y-5" noValidate>
             {/* Error Banner */}
-            {errorMessage && (\n              <div
+            {errorMessage && (
+              <div
                 role="alert"
                 className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-start gap-2.5 animate-fade-in"
               >

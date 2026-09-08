@@ -102,3 +102,4 @@ Individual test suites:
 - `npm run test-part10` - Super admin platform control panel
 - `npm run test-audit` - Part 10 final production readiness & security audit
 - `npm run test-qr` - Suite 10: Critical QR Flow End-to-End Hardening
+

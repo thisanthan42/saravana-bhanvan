@@ -1,4 +1,4 @@
-# Vercel Frontend Deployment Guide
+﻿# Vercel Frontend Deployment Guide
 
 1. Log into [Vercel Dashboard](https://vercel.com).
 2. Click **Add New...** -> **Project**.
@@ -9,4 +9,5 @@
    - **Build Command:** `npm run build`
    - **Output Directory:** `dist`
 5. Configure Environment Variable:
-   - `VITE_API_URL`: Your deployed Render backend URL (e.g. `https://saravana-bhavan-backend.onrender.com`)\n6. Click **Deploy**.
+   - `VITE_API_URL`: Your deployed Render backend URL (e.g. `https://saravana-bhavan-backend.onrender.com`)
+6. Click **Deploy**.

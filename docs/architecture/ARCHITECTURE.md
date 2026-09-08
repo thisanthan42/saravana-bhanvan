@@ -1,4 +1,4 @@
-# Architecture Overview: Saravana Bhavan Customer Feedback SaaS
+﻿# Architecture Overview: Saravana Bhavan Customer Feedback SaaS
 
 ## 1. System Topology
 The platform implements a decoupled, high-performance client-server architecture:

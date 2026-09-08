@@ -1,4 +1,4 @@
-# REST API Reference
+﻿# REST API Reference
 
 ## Public Endpoints
 - `GET /api`: Operational status and discovery

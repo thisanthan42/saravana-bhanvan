@@ -75,13 +75,13 @@ router.get('/health', FeedbackController.health);
 /**
  * @route   POST /api/manager/login
  * @desc    Manager login with rate limiting, email and password, returns JWT token
- * @access  Public (Manager Credentials Required)
+ * @access  Public
  */
 router.post('/manager/login', managerLoginLimiter, ManagerAuthController.login);
 
 /**
  * @route   GET /api/manager/me
- * @desc    Get currently authenticated manager profile & authorized branches
+ * @desc    Retrieve currently authenticated manager profile
  * @access  Protected (Manager Only)
  */
 router.get('/manager/me', requireManagerAuth, ManagerAuthController.me);

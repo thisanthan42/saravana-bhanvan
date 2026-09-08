@@ -1,4 +1,4 @@
-# Deployment Architecture
+﻿# Deployment Architecture
 
 - **Static Frontend Hosting:** Vercel Global Edge Network
 - **Backend API Hosting:** Render Web Service (Node.js 20+)

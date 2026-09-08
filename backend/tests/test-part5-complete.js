@@ -175,4 +175,38 @@ async function runPart5Verification() {
 
     // 23. Customer Submission Still Works
     console.log('\nGuest Submission Flow & Persistence');
-    const guestSubmit = await req('POST', '/api/feedback', {\n      overall_rating: 5,\n      service_rating: 'Good',\n      cleanliness_rating: 'Good',\n      toilet_rating: 'Good',\n      parking_rating: 'Good',\n      food_rating: 'Good',\n      staff_behaviour_rating: 'Good',\n      comment: 'Live test submission from customer',\n    });\n    assert(guestSubmit.status === 201 && guestSubmit.body.success === true, '22. Customer feedback submission still works perfectly');\n\n    // 24. New Feedback Appears in Manager Dashboard\n    const freshLogin = await req('POST', '/api/manager/login', {\n      email: 'manager@saravanabhavan.com',\n      password: process.env.DEFAULT_MANAGER_PASSWORD || 'Saravana@2026!',\n    });\n    const freshDashboard = await req('GET', '/api/manager/feedback?search=Live test submission', null, {\n      Authorization: `Bearer ${freshLogin.body.token}`,\n    });\n    assert(freshDashboard.body.data.length > 0, '23. New customer feedback appears in manager dashboard immediately');\n    assert(true, '24. Mobile responsiveness verified with Tailwind mobile-first design');\n\n    console.log('\\n========================================================================');\n    console.log(`📊 All 24 Verification Checks Complete: ${passed} Passed, ${failed} Failed`);\n    console.log('========================================================================\\n');\n\n    process.exit(failed > 0 ? 1 : 0);\n  } catch (e) {\n    console.error('Test error:', e);\n    process.exit(1);\n  }\n}\n\nrunPart5Verification();\n
+    const guestSubmit = await req('POST', '/api/feedback', {
+      overall_rating: 5,
+      service_rating: 'Good',
+      cleanliness_rating: 'Good',
+      toilet_rating: 'Good',
+      parking_rating: 'Good',
+      food_rating: 'Good',
+      staff_behaviour_rating: 'Good',
+      comment: 'Live test submission from customer',
+    });
+    assert(guestSubmit.status === 201 && guestSubmit.body.success === true, '22. Customer feedback submission still works perfectly');
+
+    // 24. New Feedback Appears in Manager Dashboard
+    const freshLogin = await req('POST', '/api/manager/login', {
+      email: 'manager@saravanabhavan.com',
+      password: process.env.DEFAULT_MANAGER_PASSWORD || 'Saravana@2026!',
+    });
+    const freshDashboard = await req('GET', '/api/manager/feedback?search=Live test submission', null, {
+      Authorization: `Bearer ${freshLogin.body.token}`,
+    });
+    assert(freshDashboard.body.data.length > 0, '23. New customer feedback appears in manager dashboard immediately');
+    assert(true, '24. Mobile responsiveness verified with Tailwind mobile-first design');
+
+    console.log('\n========================================================================');
+    console.log(`📊 All 24 Verification Checks Complete: ${passed} Passed, ${failed} Failed`);
+    console.log('========================================================================\n');
+
+    process.exit(failed > 0 ? 1 : 0);
+  } catch (e) {
+    console.error('Test error:', e);
+    process.exit(1);
+  }
+}
+
+runPart5Verification();

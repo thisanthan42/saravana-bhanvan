@@ -132,7 +132,7 @@ async function runPart6Audit() {
     // ------------------------------------------------------------------
     console.log('\nSECTION 5: MANAGER DASHBOARD DATA & CONTRACT INTEGRATION');
     const dashboardRes = await req('GET', '/api/manager/feedback', null, {
-      Authorization: `Bearer ${token}` credit
+      Authorization: `Bearer ${token}`,
     });
     assert(dashboardRes.status === 200, '5.1 Manager feedback list retrieved with 200 OK');
     assert(Array.isArray(dashboardRes.body.data), '5.2 Feedback data returned as array');
@@ -351,4 +351,10 @@ async function runPart6Audit() {
     if (failed > 0) {
       process.exit(1);
     }
-  } catch (err) {\n    console.error('Audit execution error:', err);\n    process.exit(1);\n  }\n}\n\nrunPart6Audit();\n
+  } catch (err) {
+    console.error('Audit execution error:', err);
+    process.exit(1);
+  }
+}
+
+runPart6Audit();

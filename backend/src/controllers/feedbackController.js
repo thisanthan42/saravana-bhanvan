@@ -14,21 +14,35 @@ export const FeedbackController = {
   async initSession(req, res, next) {
     try {
       const { qr_token, token } = req.body || {};
-      const targetQRToken = qr_token || token || null;
+      const requestedQR = qr_token || token || null;
+
+      if (requestedQR) {
+        const qrRecord = await QRModel.findByToken(requestedQR);
+        if (!qrRecord || !qrRecord.active || qrRecord.table_active === false) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid or inactive feedback QR code.',
+          });
+        }
+      }
 
       const rawIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '';
       const clientIp = typeof rawIp === 'string' ? rawIp.split(',')[0].trim() : '';
 
       const session = await SessionModel.create({
-        qrToken: targetQRToken,
+        qrToken: requestedQR,
         clientIp,
       });
 
       return res.status(201).json({
         success: true,
-        session_token: session.session_token,
-        status: session.status,
-        created_at: session.created_at,
+        message: 'Feedback session initialized',
+        data: {
+          session_token: session.session_token,
+          qr_token: session.qr_token,
+          status: session.status,
+          created_at: session.created_at,
+        },
       });
     } catch (error) {
       next(error);
@@ -37,15 +51,14 @@ export const FeedbackController = {
 
   /**
    * POST /api/feedback
-   * Public endpoint for customer feedback ingestion
-   * Implements strict atomic session claim (idempotency) and Anti-IDOR QR resolution
+   * Public customer feedback submission endpoint with atomic idempotency and duplicate defense
    */
   async submit(req, res, next) {
     try {
       const validatedData = req.validatedFeedback;
       let sessionToken = validatedData.session_token;
 
-      // 1. Session Token & Anti-Abuse Idempotency Claim (Part 8)
+      // 1. Atomic session claiming for race condition & idempotency defense
       if (sessionToken) {
         const sessionRecord = await SessionModel.findByToken(sessionToken);
         if (sessionRecord) {

@@ -162,11 +162,11 @@ export const AdminController = {
       }
 
       // Check for duplicate email
-      const existing = await ManagerModel.findByEmail(email);
+      const existing = await ManagerModel.findByEmail(email.trim());
       if (existing) {
         return res.status(409).json({
           success: false,
-          message: `Manager with email '${email}' already exists.`,
+          message: 'A manager with this email address already exists.',
         });
       }
 

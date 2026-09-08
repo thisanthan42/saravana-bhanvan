@@ -157,16 +157,16 @@ export async function submitFeedback({
     parking_rating: parkingRating,
     food_rating: foodRating,
     staff_behaviour_rating: staffBehaviourRating,
-    comment: customerComment.trim() || null,
+    comment: customerComment.trim() || undefined,
     branch_id: diningContext.branch || undefined,
     table_id: diningContext.table || undefined,
-    customer_session_token: submissionId,
-    session_token: sessionToken,
     token: effectiveToken,
+    session_token: sessionToken,
+    customer_session_token: effectiveToken || submissionId,
   };
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/feedback`, {
+    const apiRes = await fetch(`${API_BASE_URL}/api/feedback`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -174,30 +174,35 @@ export async function submitFeedback({
       body: JSON.stringify(apiPayload),
     });
 
-    const result = await response.json().catch(() => null);
+    const resJson = await apiRes.json().catch(() => null);
 
-    // Duplicate submission detection (Part 8: 409 Conflict)
-    if (response.status === 409) {
+    if (!apiRes.ok || !resJson?.success) {
+      console.warn('[Feedback API Warning] Server responded with error status:', apiRes.status, resJson);
+      if (resJson?.code === 'SESSION_ALREADY_COMPLETED') {
+        return {
+          success: false,
+          alreadyCompleted: true,
+          message: 'This feedback session has already been completed.',
+        };
+      }
+      if (apiRes.status === 429) {
+        return {
+          success: false,
+          message: 'Too many feedback submissions. Please wait a few moments before trying again.',
+        };
+      }
       return {
         success: false,
-        code: 'SESSION_ALREADY_COMPLETED',
-        message: result?.message || 'This feedback session has already been completed.',
+        message: resJson?.message || "We couldn't submit your feedback right now. Please try again.",
       };
     }
 
-    if (!response.ok || !result?.success) {
-      return {
-        success: false,
-        message: result?.message || 'Server rejected feedback submission.',
-        errors: result?.errors || [],
-      };
-    }
-
+    // Prepare client-side payload for display & receipt
     const finalPayload = {
-      id: result?.data?.id || submissionId,
-      submittedAt: result?.data?.submitted_at || submittedAt,
-      sessionToken: result?.data?.session_token || sessionToken,
-      dining: {
+      submissionId: resJson.data?.id ? `SB-${resJson.data.id}` : submissionId,
+      submittedAt: resJson.data?.submitted_at || submittedAt,
+      hotel: {
+        name: 'Saravana Bhavan Hotel',
         branch: diningContext.branch,
         tableNumber: diningContext.table,
       },

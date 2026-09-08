@@ -82,3 +82,4 @@ export const managerLoginLimiter = createRateLimiter({
   maxRequests: process.env.NODE_ENV === 'production' ? 25 : 500, // 25 in production against brute force; 500 in dev/test
   message: 'Too many manager login attempts. For security, please wait 15 minutes before trying again.',
 });
+

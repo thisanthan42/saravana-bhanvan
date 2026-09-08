@@ -1,4 +1,4 @@
-# Saravana Bhavan Hotel Customer Feedback SaaS Platform
+﻿# Saravana Bhavan Hotel Customer Feedback SaaS Platform
 
 A production-ready, full-stack, enterprise Customer Feedback SaaS platform built for Saravana Bhavan Hotel.
 
@@ -6,7 +6,7 @@ Features an anonymous mobile-first dining feedback experience via table QR codes
 
 ---
 
-## 🏗️ Master Project Architecture
+## 🏛️ Master Project Architecture
 
 ```text
 C:\hotel-feedback-saas/
@@ -21,8 +21,7 @@ C:\hotel-feedback-saas/
 │   │   ├── data/                 # Hospitality questions configuration
 │   │   ├── styles/               # Styling tokens & Tailwind directives (index.css)
 │   │   ├── App.jsx               # Application router & layout controller
-│   │   ├── main.jsx              # React DOM entrypoint
-│   │   └── pages/index.js        # Page exports
+│   │   └── main.jsx              # React DOM entrypoint
 │   ├── index.html                # HTML5 shell
 │   ├── package.json              # Frontend dependencies
 │   ├── tailwind.config.js        # Luxury hospitality styling tokens

@@ -56,7 +56,8 @@ async function runEndToEndQRTest() {
     // STEP 1: Manager Authentication
     // ------------------------------------------------------------------
     console.log('STEP 1: Authenticating as Branch Manager...');
-    const loginRes = await req('POST', '/api/manager/login', {\n      email: 'manager@saravanabhavan.com',
+    const loginRes = await req('POST', '/api/manager/login', {
+      email: 'manager@saravanabhavan.com',
       password: process.env.DEFAULT_MANAGER_PASSWORD || 'Saravana@2026!',
     });
     assert(loginRes.status === 200, '1.1 Manager authenticated successfully');

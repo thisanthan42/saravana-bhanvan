@@ -1,4 +1,4 @@
-import fs from 'fs';
+﻿import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { pool } from '../src/config/database.js';
@@ -12,26 +12,26 @@ const __dirname = path.dirname(__filename);
 
 async function runMigration() {
   console.log('---------------------------------------------------------');
-  console.log('🔄 Saravana Bhavan Database Migration Runner');
+  console.log('ðŸ”„ Saravana Bhavan Database Migration Runner');
   console.log('---------------------------------------------------------');
 
   const schemaPath = fs.existsSync(path.join(__dirname, 'schema', 'schema.sql')) ? path.join(__dirname, 'schema', 'schema.sql') : path.join(__dirname, 'schema.sql');
   
   if (!fs.existsSync(schemaPath)) {
-    console.error(`❌ Schema file not found at: ${schemaPath}`);
+    console.error(`âŒ Schema file not found at: ${schemaPath}`);
     process.exit(1);
   }
 
   const sql = fs.readFileSync(schemaPath, 'utf-8');
   const client = await pool.connect().catch((err) => {
-    console.error('❌ Could not connect to PostgreSQL database.');
+    console.error('âŒ Could not connect to PostgreSQL database.');
     console.error(`Reason: ${err.message}`);
     console.error('\nPlease verify your DATABASE_URL in .env before running migrations.');
     process.exit(1);
   });
 
   try {
-    console.log('📦 Executing schema.sql migration transaction...');
+    console.log('ðŸ“¦ Executing schema.sql migration transaction...');
     await client.query('BEGIN');
     await client.query(sql);
 
@@ -52,7 +52,7 @@ async function runMigration() {
         [defaultName, defaultEmail, hashed, 'super_admin']
       );
       superAdminId = insMgr.rows[0].id;
-      console.log(`👤 Initial Super Admin account seeded: ${defaultEmail}`);
+      console.log(`ðŸ‘¤ Initial Super Admin account seeded: ${defaultEmail}`);
     } else {
       superAdminId = checkRes.rows[0].id;
       await client.query("UPDATE managers SET role = 'super_admin', password_hash = $1 WHERE id = $2", [hashed, superAdminId]);
@@ -67,7 +67,7 @@ async function runMigration() {
         ['Saravana Bhavan Hotel']
       );
       bizId = insBiz.rows[0].id;
-      console.log('🏢 Initial business seeded: Saravana Bhavan Hotel');
+      console.log('ðŸ¢ Initial business seeded: Saravana Bhavan Hotel');
     } else {
       bizId = bizRes.rows[0].id;
     }
@@ -88,7 +88,7 @@ async function runMigration() {
           [bizId, b.name, b.code, b.address, true]
         );
         branchMap[b.code] = insB.rows[0].id;
-        console.log(`📍 Branch seeded: ${b.name} (${b.code})`);
+        console.log(`ðŸ“ Branch seeded: ${b.name} (${b.code})`);
       } else {
         branchMap[b.code] = bRes.rows[0].id;
       }
@@ -110,7 +110,7 @@ async function runMigration() {
         ['Coimbatore Branch Manager', cbeEmail, hashedCbe, 'manager']
       );
       cbeManagerId = insCbe.rows[0].id;
-      console.log(`👤 Coimbatore Branch Manager seeded: ${cbeEmail}`);
+      console.log(`ðŸ‘¤ Coimbatore Branch Manager seeded: ${cbeEmail}`);
     } else {
       cbeManagerId = cbeCheck.rows[0].id;
     }
@@ -126,7 +126,7 @@ async function runMigration() {
           'INSERT INTO manager_branches (manager_id, branch_id) VALUES ($1, $2)',
           [cbeManagerId, cbeBranchId]
         );
-        console.log(`🔗 Assigned ${cbeEmail} to branch ID ${cbeBranchId} (Coimbatore)`);
+        console.log(`ðŸ”— Assigned ${cbeEmail} to branch ID ${cbeBranchId} (Coimbatore)`);
       }
     }
 
@@ -162,18 +162,18 @@ async function runMigration() {
             'INSERT INTO qr_codes (table_id, public_token, active) VALUES ($1, $2, $3)',
             [tableId, token, true]
           );
-          console.log(`📱 Seeded QR code for Branch ${bt.branchId} Table ${tNum} (token: ${token})`);
+          console.log(`ðŸ“± Seeded QR code for Branch ${bt.branchId} Table ${tNum} (token: ${token})`);
         }
       }
     }
 
     await client.query('COMMIT');
 
-    console.log('✅ Migration executed successfully!');
-    console.log('✅ Tables "feedback", "managers", "businesses", "branches", "tables", "qr_codes" verified.');
+    console.log('âœ… Migration executed successfully!');
+    console.log('âœ… Tables "feedback", "managers", "businesses", "branches", "tables", "qr_codes" verified.');
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('❌ Migration failed and rolled back:', err.message);
+    console.error('âŒ Migration failed and rolled back:', err.message);
     process.exit(1);
   } finally {
     client.release();
@@ -183,3 +183,4 @@ async function runMigration() {
 }
 
 runMigration();
+

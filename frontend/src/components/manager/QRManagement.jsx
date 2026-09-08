@@ -60,7 +60,8 @@ export default function QRManagement({ onNavigateToDashboard, onLogout }) {
   const loadQRs = async () => {
     setIsLoading(true);
     try {
-      const [qrsRes, branchRes] = await Promise.all([\n        fetchManagerQRs({ branchId: filterBranchId, active: filterActive }),
+      const [qrsRes, branchRes] = await Promise.all([
+        fetchManagerQRs({ branchId: filterBranchId, active: filterActive }),
         fetchBranches().catch(() => ({ data: [] })),
       ]);
 
@@ -74,7 +75,9 @@ export default function QRManagement({ onNavigateToDashboard, onLogout }) {
           setFilterBranchId(String(branchRes.data[0].id));
         }
       }
-    } catch (err) {\n      console.error('Failed to load QRs:', err);\n    } finally {
+    } catch (err) {
+      console.error('Failed to load QRs:', err);
+    } finally {
       setIsLoading(false);
     }
   };
@@ -144,11 +147,11 @@ export default function QRManagement({ onNavigateToDashboard, onLogout }) {
     const activeDomain = overrideDomain !== null ? overrideDomain : customDomain;
 
     if (activeDomain && activeDomain.trim()) {
-      return `${activeDomain.trim().replace(/\\/+$/, '')}/q/${cleanToken}`;
+      return `${activeDomain.trim().replace(/\/+$/, '')}/q/${cleanToken}`;
     }
 
     if (qr.public_url) {
-      let url = qr.public_url.replace(/\\/\\?token=/, '/q/');
+      let url = qr.public_url.replace(/\/\?token=/, '/q/');
       // If backend gave localhost but the manager is on a LAN IP or live domain, adapt to current origin
       if (url.includes('localhost') && typeof window !== 'undefined' && !window.location.hostname.includes('localhost')) {
         return `${window.location.origin}/q/${cleanToken}`;
@@ -291,7 +294,7 @@ export default function QRManagement({ onNavigateToDashboard, onLogout }) {
                 await managerLogout();
                 onLogout();
               }}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Logout</span>

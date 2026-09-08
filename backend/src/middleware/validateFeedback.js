@@ -45,7 +45,14 @@ export async function validateFeedback(req, res, next) {
   }
 
   // 2. Specific Ratings Validation (Required: 'Good' | 'Average' | 'Bad')
-  const specificFields = [\n    { key: 'service_rating', alt: 'serviceRating', label: 'Service' },\n    { key: 'cleanliness_rating', alt: 'cleanlinessRating', label: 'Cleanliness' },\n    { key: 'toilet_rating', alt: 'toiletRating', label: 'Toilet/Restroom' },\n    { key: 'parking_rating', alt: 'parkingRating', label: 'Parking facility' },\n    { key: 'food_rating', alt: 'foodRating', label: 'Food' },\n    { key: 'staff_behaviour_rating', alt: 'staffBehaviourRating', label: 'Staff behaviour' },\n  ];
+  const specificFields = [
+    { key: 'service_rating', alt: 'serviceRating', label: 'Service' },
+    { key: 'cleanliness_rating', alt: 'cleanlinessRating', label: 'Cleanliness' },
+    { key: 'toilet_rating', alt: 'toiletRating', label: 'Toilet/Restroom' },
+    { key: 'parking_rating', alt: 'parkingRating', label: 'Parking facility' },
+    { key: 'food_rating', alt: 'foodRating', label: 'Food' },
+    { key: 'staff_behaviour_rating', alt: 'staffBehaviourRating', label: 'Staff behaviour' },
+  ];
 
   const normalizedRatings = {};
 

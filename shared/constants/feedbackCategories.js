@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Hospitality Dining Feedback Rating Categories
  */
 export const FEEDBACK_CATEGORIES = [

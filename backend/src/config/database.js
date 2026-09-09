@@ -17,7 +17,7 @@ export const pool = new Pool({
   ssl: sslConfig,
   max: 20, // Maximum pool connections
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
+  connectionTimeoutMillis: 30000,
 });
 
 import { AuthService } from '../services/authService.js';
@@ -213,11 +213,13 @@ export async function testConnection() {
       mode: 'PostgreSQL Pool',
     };
   } catch (error) {
-    isPostgresAvailable = false;
+    if (!isProduction) {
+      isPostgresAvailable = false;
+    }
     return {
       connected: false,
       error: error.message,
-      mode: 'In-Memory Fallback (PostgreSQL not connected)',
+      mode: isProduction ? 'PostgreSQL Disconnected' : 'In-Memory Fallback (PostgreSQL not connected)',
     };
   }
 }
@@ -238,8 +240,8 @@ export async function query(text, params = []) {
       isPostgresAvailable = true;
       return res;
     } catch (err) {
-      // If connection refused, mark Postgres as unavailable and fallback gracefully
-      if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND' || err.message.includes('connect')) {
+      // If connection refused in development, mark Postgres as unavailable and fallback gracefully
+      if (!isProduction && (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND' || err.message.includes('connect'))) {
         console.warn(`[Database Warning] PostgreSQL connection refused. Using local fallback store for development.`);
         isPostgresAvailable = false;
       } else {

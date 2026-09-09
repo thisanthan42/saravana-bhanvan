@@ -23,12 +23,12 @@ export const pool = new Pool({
 import { AuthService } from '../services/authService.js';
 
 // In-memory fallback storage when PostgreSQL server is not locally running
-const defaultSuperAdminHash = AuthService.hashPassword(process.env.DEFAULT_MANAGER_PASSWORD || 'test123');
+const defaultSuperAdminHash = AuthService.hashPassword(process.env.DEFAULT_MANAGER_PASSWORD || 'ABCXYZ');
 const defaultCbeManagerHash = AuthService.hashPassword('Coimbatore@2026!');
 
 const memoryFeedbackStore = [];
 const memorySessionStore = [];
-let memoryFeedbackAutoId = 1;
+let memoryFeedbackAutoId = 3;
 let memorySessionAutoId = 1;
 let isPostgresAvailable = null;
 
@@ -272,7 +272,10 @@ export async function query(text, params = []) {
   // 2. Manager Selects
   if (upperText.includes('FROM MANAGERS')) {
     if (upperText.includes('LOWER(EMAIL)')) {
-      const targetEmail = String(params[0] || '').toLowerCase();
+      let targetEmail = String(params[0] || '').trim().toLowerCase();
+      if (targetEmail === 'manager' || targetEmail === 'admin') {
+        targetEmail = (process.env.DEFAULT_MANAGER_EMAIL || 'manager@saravanabhavan.com').toLowerCase();
+      }
       const found = memoryManagerStore.find(m => m.email.toLowerCase() === targetEmail);
       return { rows: found ? [found] : [], rowCount: found ? 1 : 0 };
     }
@@ -497,12 +500,36 @@ export async function query(text, params = []) {
       customer_session_token: params[10] || null,
       session_token: sessionToken,
       created_at: new Date().toISOString(),
+      starred: false,
     };
     memoryFeedbackStore.unshift(newRecord);
     return {
       rows: [newRecord],
       rowCount: 1,
     };
+  }
+
+  // 4b. Feedback Delete by ID
+  if (upperText.includes('DELETE FROM FEEDBACK') && upperText.includes('WHERE ID =')) {
+    const targetId = Number(params[0]);
+    const idx = memoryFeedbackStore.findIndex(f => Number(f.id) === targetId);
+    if (idx !== -1) {
+      const removed = memoryFeedbackStore.splice(idx, 1);
+      return { rows: removed, rowCount: 1 };
+    }
+    return { rows: [], rowCount: 0 };
+  }
+
+  // 4c. Feedback Update Starred
+  if (upperText.includes('UPDATE FEEDBACK') && upperText.includes('STARRED')) {
+    const starred = params[0];
+    const targetId = Number(params[1]);
+    const found = memoryFeedbackStore.find(f => Number(f.id) === targetId);
+    if (found) {
+      found.starred = Boolean(starred);
+      return { rows: [found], rowCount: 1 };
+    }
+    return { rows: [], rowCount: 0 };
   }
 
   // 4. Feedback Selects (All / Metrics / Filters / Single Item by ID)

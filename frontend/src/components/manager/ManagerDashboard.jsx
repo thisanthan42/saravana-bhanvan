@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   fetchManagerFeedback,
   fetchBranches,
   managerLogout,
   managerStorage,
   getManagerProfile,
+  deleteFeedback,
+  toggleStarFeedback,
 } from '../../services/managerService';
 import FeedbackDetailModal from './FeedbackDetailModal';
 import {
@@ -24,15 +26,18 @@ import {
   Inbox,
   AlertCircle,
   FilterX,
-  QrCode,
   MapPin,
   Building2,
+  Utensils,
+  Trash2,
+  Bookmark,
+  BookmarkCheck,
 } from 'lucide-react';
 
-export default function ManagerDashboard({ onLogout, onNavigateToQR, onNavigateToAdmin }) {
+export default function ManagerDashboard({ onLogout }) {
   const [manager, setManager] = useState(managerStorage.getManager() || null);
   const [branches, setBranches] = useState([]);
-  const [selectedBranchId, setSelectedBranchId] = useState('all');
+  const [selectedBranchId, setSelectedBranchId] = useState('1');
   const [feedbackList, setFeedbackList] = useState([]);
   const [summary, setSummary] = useState({
     total: 0,
@@ -67,6 +72,17 @@ export default function ManagerDashboard({ onLogout, onNavigateToQR, onNavigateT
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [starringId, setStarringId] = useState(null);
+
+  const handleLogout = useCallback(async () => {
+    await managerLogout();
+    if (onLogout) {
+      onLogout();
+    } else {
+      window.location.pathname = '/manager';
+    }
+  }, [onLogout]);
 
   // Load Manager profile & authorized branches on mount
   useEffect(() => {
@@ -82,18 +98,17 @@ export default function ManagerDashboard({ onLogout, onNavigateToQR, onNavigateT
       .then((res) => {
         if (res.data) {
           setBranches(res.data);
-          if (res.data.length === 1) {
-            setSelectedBranchId(String(res.data[0].id));
-          }
         }
       })
       .catch((err) => console.warn('Could not load branches:', err));
-  }, []);
+  }, [handleLogout]);
 
   // Fetch Feedback Data from Backend API
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    setErrorMsg('');
+  const loadData = useCallback(async (isBackground = false) => {
+    if (!isBackground) {
+      setIsLoading(true);
+      setErrorMsg('');
+    }
 
     try {
       const isNeedActionOnly = activeTab === 'needsAction';
@@ -114,7 +129,7 @@ export default function ManagerDashboard({ onLogout, onNavigateToQR, onNavigateT
         setFeedbackList(result.data || result.feedback || []);
         if (result.summary) setSummary(result.summary);
         if (result.pagination) setPagination(result.pagination);
-      } else {
+      } else if (!isBackground) {
         setErrorMsg(result.message || "We couldn't load the feedback right now. Please try again.");
       }
     } catch (err) {
@@ -123,30 +138,60 @@ export default function ManagerDashboard({ onLogout, onNavigateToQR, onNavigateT
         handleLogout();
         return;
       }
-      setErrorMsg("We couldn't load the feedback right now. Please try again.");
+      if (!isBackground) {
+        setErrorMsg("We couldn't load the feedback right now. Please try again.");
+      }
     } finally {
-      setIsLoading(false);
+      if (!isBackground) {
+        setIsLoading(false);
+      }
     }
-  }, [activeTab, starFilter, searchKeyword, dateRange, startDate, endDate, sortOrder, currentPage, selectedBranchId]);
+  }, [activeTab, starFilter, searchKeyword, dateRange, startDate, endDate, sortOrder, currentPage, selectedBranchId, handleLogout]);
 
   useEffect(() => {
-    loadData();
+    loadData(false);
+    // Auto-poll every 4 seconds so submitted feedback lands immediately on the dashboard
+    const pollInterval = setInterval(() => {
+      loadData(true);
+    }, 4000);
+    return () => clearInterval(pollInterval);
   }, [loadData]);
-
-  const handleLogout = async () => {
-    await managerLogout();
-    if (onLogout) {
-      onLogout();
-    } else {
-      window.location.pathname = '/manager/login';
-    }
-  };
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     setSearchKeyword(searchInput.trim());
     setCurrentPage(1);
   };
+
+  // Delete a feedback record
+  const handleDelete = useCallback(async (id) => {
+    if (!window.confirm(`Are you sure you want to delete feedback #${id}? This action cannot be undone.`)) return;
+    setDeletingId(id);
+    try {
+      await deleteFeedback(id);
+      setFeedbackList((prev) => prev.filter((item) => item.id !== id));
+      if (selectedItem && selectedItem.id === id) setSelectedItem(null);
+    } catch (err) {
+      alert(`Failed to delete: ${err.message}`);
+    } finally {
+      setDeletingId(null);
+    }
+  }, [selectedItem]);
+
+  // Toggle star/favorite on a feedback record
+  const handleToggleStar = useCallback(async (id, currentStarred) => {
+    setStarringId(id);
+    try {
+      const res = await toggleStarFeedback(id, !currentStarred);
+      setFeedbackList((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, starred: res.data?.starred ?? !currentStarred } : item))
+      );
+    } catch (err) {
+      alert(`Failed to update star: ${err.message}`);
+    } finally {
+      setStarringId(null);
+    }
+  }, []);
 
   const handleClearSearch = () => {
     setSearchInput('');
@@ -179,22 +224,29 @@ export default function ManagerDashboard({ onLogout, onNavigateToQR, onNavigateT
   };
 
   const formatDate = (dateStr) => {
-    if (!dateStr) return { date: 'N/A', time: '' };
+    if (!dateStr) return { date: 'N/A', time: '', day: '' };
     try {
       const d = new Date(dateStr);
       return {
-        date: d.toLocaleDateString('en-US', {
-          month: 'short',
+        date: d.toLocaleDateString('en-IN', {
+          timeZone: 'Asia/Kolkata',
           day: 'numeric',
+          month: 'long',
           year: 'numeric',
         }),
         time: d.toLocaleTimeString('en-US', {
+          timeZone: 'Asia/Kolkata',
           hour: '2-digit',
           minute: '2-digit',
+          hour12: true,
+        }).toUpperCase(),
+        day: d.toLocaleDateString('en-IN', {
+          timeZone: 'Asia/Kolkata',
+          weekday: 'long',
         }),
       };
     } catch {
-      return { date: dateStr, time: '' };
+      return { date: dateStr, time: '', day: '' };
     }
   };
 
@@ -232,80 +284,40 @@ export default function ManagerDashboard({ onLogout, onNavigateToQR, onNavigateT
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Branch Selector or Assigned Branch Badge */}
-            {branches.length > 1 ? (
-              <div className="flex items-center gap-1.5 bg-amber-50/90 border border-amber-200/80 rounded-xl px-2.5 py-1.5 text-xs shadow-2xs">
-                <Building2 className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                <label htmlFor="branch-select" className="text-[11px] font-semibold text-amber-800 hidden md:inline">
-                  Branch:
-                </label>
-                <select
-                  id="branch-select"
-                  value={selectedBranchId}
-                  onChange={(e) => {
-                    setSelectedBranchId(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="bg-transparent font-bold text-stone-800 text-xs focus:outline-none cursor-pointer"
-                >
-                  {manager?.role === 'super_admin' && (
-                    <option value="all">All Branches ({branches.length})</option>
-                  )}
-                  {branches.map((b) => (
-                    <option key={b.id} value={String(b.id)}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : branches.length === 1 ? (
-              <div className="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-amber-900 shadow-2xs">
-                <MapPin className="w-3.5 h-3.5 text-amber-700" />
-                <span>{branches[0]?.name}</span>
-              </div>
-            ) : null}
+
 
             <div className="hidden sm:flex flex-col text-right">
               <span className="text-xs font-bold text-stone-800 flex items-center gap-1.5 justify-end">
-                {manager?.name || 'Manager'}
-                <span
-                  className={`px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide rounded-md ${
-                    manager?.role === 'super_admin'
-                      ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                      : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
-                  }`}
-                >
-                  {manager?.role === 'super_admin' ? 'Super Admin' : 'Branch Manager'}
+                {manager?.name || 'Hotel Manager'}
+                <span className="px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide rounded-md bg-amber-100 text-amber-900 border border-amber-300">
+                  Manager
                 </span>
               </span>
               <span className="text-[10px] text-emerald-700 font-semibold flex items-center gap-1 justify-end">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Authenticated Session
+                Live Sync Active
               </span>
             </div>
 
-            {/* Switch to Super Admin Platform Control Panel */}
-            {manager?.role === 'super_admin' && (
-              <button
-                type="button"
-                onClick={onNavigateToAdmin}
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-amber-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 border border-amber-600 rounded-xl transition-all cursor-pointer shadow-xs"
-                title="Open Super Admin Platform Control Panel"
-              >
-                <Shield className="w-3.5 h-3.5" />
-                <span className="hidden md:inline">Admin Panel</span>
-              </button>
-            )}
-
-            {/* Switch to QR Code Management */}
+            {/* Manual Refresh Button */}
             <button
               type="button"
-              onClick={onNavigateToQR}
+              onClick={() => loadData(false)}
+              title="Refresh Feedback"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 border border-stone-200 rounded-xl transition-colors cursor-pointer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+              <span className="hidden md:inline">Refresh</span>
+            </button>
+
+            {/* Direct Link to Customer Feedback Form */}
+            <a
+              href="/"
               className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl transition-colors cursor-pointer"
             >
-              <QrCode className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">QR Codes</span>
-            </button>
+              <Utensils className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Customer Form</span>
+            </a>
 
             <button
               onClick={handleLogout}
@@ -674,7 +686,7 @@ export default function ManagerDashboard({ onLogout, onNavigateToQR, onNavigateT
                     <th className="py-3.5 px-4">Category Ratings</th>
                     <th className="py-3.5 px-4">Customer Comment</th>
                     <th className="py-3.5 px-4">Action Status</th>
-                    <th className="py-3.5 px-4 text-right">Details</th>
+                    <th className="py-3.5 px-4 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100 text-stone-800">
@@ -689,10 +701,11 @@ export default function ManagerDashboard({ onLogout, onNavigateToQR, onNavigateT
                         {/* Date & Time and Dining Table Badge */}
                         <td className="py-3.5 px-4 whitespace-nowrap font-medium text-stone-600">
                           <div className="font-bold text-stone-900">{formatted.date}</div>
-                          <div className="text-[10px] text-stone-500">{formatted.time}</div>
+                          <div className="text-[11px] text-stone-700 font-semibold">{formatted.day}</div>
+                          <div className="text-[10px] text-stone-500 mb-1">{formatted.time}</div>
                           {item.table_id && (
                             <span className="inline-block mt-1 px-2 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200/80 text-[10px] font-bold">
-                              {item.table_id} {item.branch_id ? `• ${item.branch_id}` : ''}
+                              {item.table_id}
                             </span>
                           )}
                         </td>
@@ -773,19 +786,62 @@ export default function ManagerDashboard({ onLogout, onNavigateToQR, onNavigateT
                           )}
                         </td>
 
-                        {/* Details CTA */}
-                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedItem(item);
-                            }}
-                            className="inline-flex items-center gap-1 text-xs font-bold text-amber-800 hover:text-amber-950 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>View</span>
-                          </button>
+                        {/* Actions: Star, View, Delete */}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <div className="flex items-center justify-center gap-1.5">
+                            {/* Star/Favorite */}
+                            <button
+                              type="button"
+                              title={item.starred ? 'Remove from favorites' : 'Add to favorites'}
+                              disabled={starringId === item.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleStar(item.id, item.starred);
+                              }}
+                              className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                                item.starred
+                                  ? 'bg-amber-100 border-amber-300 text-amber-700 hover:bg-amber-200'
+                                  : 'bg-stone-50 border-stone-200 text-stone-400 hover:text-amber-600 hover:border-amber-300 hover:bg-amber-50'
+                              } ${starringId === item.id ? 'opacity-50' : ''}`}
+                            >
+                              {item.starred ? (
+                                <BookmarkCheck className="w-3.5 h-3.5" />
+                              ) : (
+                                <Bookmark className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                            {/* View */}
+                            <button
+                              type="button"
+                              title="View details"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedItem(item);
+                              }}
+                              className="p-1.5 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100 hover:text-amber-950 transition-colors cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+                            {/* Delete */}
+                            <button
+                              type="button"
+                              title="Delete feedback"
+                              disabled={deletingId === item.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(item.id);
+                              }}
+                              className={`p-1.5 rounded-lg border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-800 transition-colors cursor-pointer ${
+                                deletingId === item.id ? 'opacity-50' : ''
+                              }`}
+                            >
+                              {deletingId === item.id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );

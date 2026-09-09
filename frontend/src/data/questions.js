@@ -1,21 +1,15 @@
 export const SPECIFIC_QUESTIONS = [
   {
+    id: 'food',
+    title: 'How was the food?',
+    subtitle: 'Taste, freshness, temperature & presentation',
+    icon: 'Soup',
+  },
+  {
     id: 'service',
     title: 'How was our service?',
     subtitle: 'Promptness, attention & dining assistance',
     icon: 'UtensilsCrossed',
-  },
-  {
-    id: 'cleanliness',
-    title: 'How was the cleanliness?',
-    subtitle: 'Tables, dining area & hygiene standards',
-    icon: 'Sparkles',
-  },
-  {
-    id: 'toilet',
-    title: 'How was the toilet/restroom?',
-    subtitle: 'Sanitation, supplies & freshness',
-    icon: 'Droplets',
   },
   {
     id: 'parking',
@@ -24,16 +18,22 @@ export const SPECIFIC_QUESTIONS = [
     icon: 'Car',
   },
   {
-    id: 'food',
-    title: 'How was the food?',
-    subtitle: 'Taste, freshness, temperature & presentation',
-    icon: 'Soup',
+    id: 'cleanliness',
+    title: 'How was the cleanliness?',
+    subtitle: 'Tables, dining area & hygiene standards',
+    icon: 'Sparkles',
   },
   {
     id: 'staffBehaviour',
     title: 'How was the staff behaviour?',
     subtitle: 'Courtesy, politeness & friendliness',
     icon: 'HeartHandshake',
+  },
+  {
+    id: 'toilet',
+    title: 'How was the toilet/restroom?',
+    subtitle: 'Sanitation, supplies & freshness',
+    icon: 'Droplets',
   },
 ];
 

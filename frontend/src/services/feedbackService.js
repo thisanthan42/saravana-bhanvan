@@ -39,16 +39,13 @@ const SESSION_STORAGE_KEY = 'sb_feedback_submitted';
 const SESSION_TOKEN_KEY = 'sb_feedback_session_token';
 
 export function getOrCreateSessionToken() {
+  const token = `sbsess_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 10)}${Math.random().toString(36).substring(2, 10)}`;
   try {
-    let token = sessionStorage.getItem(SESSION_TOKEN_KEY);
-    if (!token) {
-      token = `sbsess_${Math.random().toString(36).substring(2, 12)}${Math.random().toString(36).substring(2, 12)}`;
-      sessionStorage.setItem(SESSION_TOKEN_KEY, token);
-    }
-    return token;
+    sessionStorage.setItem(SESSION_TOKEN_KEY, token);
   } catch {
-    return `sbsess_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+    // Ignore storage error
   }
+  return token;
 }
 
 export function setSessionToken(token) {
@@ -221,6 +218,7 @@ export async function submitFeedback({
     // Store in session storage ONLY upon verified successful backend submission
     try {
       sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(finalPayload));
+      sessionStorage.removeItem(SESSION_TOKEN_KEY);
     } catch {
       // Ignore storage errors
     }

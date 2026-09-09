@@ -14,7 +14,10 @@ export const ManagerModel = {
    */
   async findByEmail(email) {
     if (!email) return null;
-    const cleanEmail = email.trim().toLowerCase();
+    let cleanEmail = email.trim().toLowerCase();
+    if (cleanEmail === 'manager' || cleanEmail === 'admin') {
+      cleanEmail = (process.env.DEFAULT_MANAGER_EMAIL || 'manager@saravanabhavan.com').toLowerCase();
+    }
 
     const text = `
       SELECT id, name, email, password_hash, role, status, business_id, created_at, updated_at

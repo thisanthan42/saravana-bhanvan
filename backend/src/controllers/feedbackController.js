@@ -278,6 +278,76 @@ export const FeedbackController = {
   },
 
   /**
+   * DELETE /api/manager/feedback/:id
+   * Protected endpoint to delete a feedback record
+   */
+  async deleteById(req, res, next) {
+    try {
+      const { id } = req.params;
+      const item = await FeedbackModel.findById(id);
+
+      if (!item) {
+        return res.status(404).json({
+          success: false,
+          message: 'Feedback record not found',
+        });
+      }
+
+      // Check branch authorization
+      const isSuperAdmin = req.manager?.role === 'super_admin' || req.manager?.role === 'owner';
+      if (!isSuperAdmin && item.branch_id) {
+        const isAuthorized = req.manager.authorizedBranchIds.some(bId => matchesBranch(item.branch_id, bId));
+        if (!isAuthorized) {
+          return res.status(403).json({
+            success: false,
+            message: "Access denied: You are not authorized to delete feedback for this branch.",
+            code: 'FORBIDDEN_BRANCH_ACCESS',
+          });
+        }
+      }
+
+      await FeedbackModel.deleteById(Number(id));
+
+      return res.status(200).json({
+        success: true,
+        message: `Feedback #${id} deleted successfully.`,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * PATCH /api/manager/feedback/:id/star
+   * Protected endpoint to toggle star/favorite status on a feedback record
+   */
+  async toggleStar(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { starred } = req.body;
+
+      const item = await FeedbackModel.findById(id);
+      if (!item) {
+        return res.status(404).json({
+          success: false,
+          message: 'Feedback record not found',
+        });
+      }
+
+      const newStarred = starred !== undefined ? Boolean(starred) : !item.starred;
+      await FeedbackModel.updateStarred(Number(id), newStarred);
+
+      return res.status(200).json({
+        success: true,
+        message: newStarred ? 'Feedback starred.' : 'Feedback un-starred.',
+        data: { id: Number(id), starred: newStarred },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
    * GET /api/health
    * System health check & database connectivity test
    */

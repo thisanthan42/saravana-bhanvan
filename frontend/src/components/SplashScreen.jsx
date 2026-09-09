@@ -5,15 +5,15 @@ export default function SplashScreen({ onComplete }) {
   const [isFadingOut, setIsFadingOut] = useState(false);
 
   useEffect(() => {
-    // Keep splash screen visible for 5.0 seconds, then smoothly fade out
+    // Keep splash screen visible for 4.0 seconds, then smoothly fade out
     const fadeTimer = setTimeout(() => {
       setIsFadingOut(true);
-    }, 5000);
+    }, 4000);
 
-    // Completely complete transition after fade out animation (5.45s total)
+    // Completely complete transition after fade out animation (4.45s total)
     const completeTimer = setTimeout(() => {
       if (onComplete) onComplete();
-    }, 5450);
+    }, 4450);
 
     return () => {
       clearTimeout(fadeTimer);

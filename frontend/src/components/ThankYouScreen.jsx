@@ -5,11 +5,13 @@ import {
   Star,
   Receipt,
   Sparkles,
-  Clock
+  Clock,
+  RotateCcw,
+  ArrowRight,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-export default function ThankYouScreen({ submissionData }) {
+export default function ThankYouScreen({ submissionData, onReset }) {
   // Fire subtle golden confetti on load
   useEffect(() => {
     try {
@@ -106,6 +108,7 @@ export default function ThankYouScreen({ submissionData }) {
           <Heart className="w-3.5 h-3.5 text-rose-500 shrink-0" />
           <span>Your feedback has been saved. Thank you for your time.</span>
         </div>
+
       </div>
     </div>
   );

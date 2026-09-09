@@ -8,7 +8,7 @@ const MANAGER_KEY = 'sb_manager_profile';
 
 export const managerStorage = {
   getToken() {
-    return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY) || null;
+    return sessionStorage.getItem(TOKEN_KEY) || null;
   },
   setToken(token, manager) {
     sessionStorage.setItem(TOKEN_KEY, token);
@@ -19,11 +19,12 @@ export const managerStorage = {
   clearToken() {
     sessionStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(MANAGER_KEY);
+    // Also clear localStorage just in case legacy tokens are stuck there
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(MANAGER_KEY);
   },
   getManager() {
-    const raw = sessionStorage.getItem(MANAGER_KEY) || localStorage.getItem(MANAGER_KEY);
+    const raw = sessionStorage.getItem(MANAGER_KEY);
     if (!raw) return null;
     try {
       return JSON.parse(raw);
@@ -219,3 +220,21 @@ export async function createManager({ name, email, password, role = 'manager', b
   });
 }
 
+/**
+ * Delete a Feedback Record by ID
+ */
+export async function deleteFeedback(id) {
+  return await managerFetch(`/api/manager/feedback/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+/**
+ * Toggle Star/Favorite on a Feedback Record
+ */
+export async function toggleStarFeedback(id, starred) {
+  return await managerFetch(`/api/manager/feedback/${id}/star`, {
+    method: 'PATCH',
+    body: JSON.stringify({ starred }),
+  });
+}

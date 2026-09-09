@@ -1,0 +1,200 @@
+name: Saravana Bhavan Enterprise CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+  packages: write
+  pull-requests: write
+
+jobs:
+  # =========================================================================
+  # 1. BACKEND CI: PostgreSQL Container, Migrations & Automated Test Suite
+  # =========================================================================
+  backend-ci:
+    name: Backend CI (Node 20 + PostgreSQL 16)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: saravana_admin
+          POSTGRES_PASSWORD: test_ci_password_2026
+          POSTGRES_DB: saravana_bhavan_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: backend/package.json
+
+      - name: Install Backend Dependencies
+        working-directory: backend
+        run: |
+          npm ci || npm install
+
+      - name: Execute Database Migrations
+        working-directory: backend
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://saravana_admin:test_ci_password_2026@localhost:5432/saravana_bhavan_db
+          JWT_SECRET: ci-secure-token-test-signing-key-32-chars-long
+          DEFAULT_MANAGER_NAME: Saravana Bhavan Test Admin
+          DEFAULT_MANAGER_EMAIL: manager@saravanabhavan.com
+          DEFAULT_MANAGER_PASSWORD: test123
+        run: |
+          npm run migrate
+
+      - name: Run Backend Integration & Security Tests
+        working-directory: backend
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://saravana_admin:test_ci_password_2026@localhost:5432/saravana_bhavan_db
+          JWT_SECRET: ci-secure-token-test-signing-key-32-chars-long
+          PORT: 5000
+          CORS_ORIGIN: http://localhost:3000,http://localhost:5173
+          PUBLIC_APP_URL: http://localhost:3000
+        run: |
+          npm test
+
+      - name: Security Vulnerability Audit
+        working-directory: backend
+        run: |
+          npm audit --audit-level=high || true
+
+  # =========================================================================
+  # 2. FRONTEND CI: Vite Bundler, Asset Verification & Artifact Packaging
+  # =========================================================================
+  frontend-ci:
+    name: Frontend CI (Vite 6 + React 18)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package.json
+
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: |
+          npm ci || npm install
+
+      - name: Build Frontend Application
+        working-directory: frontend
+        env:
+          VITE_API_URL: https://saravana-bhavan-backend.onrender.com
+        run: |
+          npm run build
+
+      - name: Verify Distribution Bundle
+        working-directory: frontend
+        run: |
+          test -f dist/index.html || (echo "dist/index.html is missing!" && exit 1)
+          echo "Frontend build successfully verified:"
+          ls -lh dist/
+          ls -lh dist/assets/
+
+      - name: Archive Frontend Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 7
+
+  # =========================================================================
+  # 3. CONTINUOUS DEPLOYMENT: Render Backend
+  # =========================================================================
+  deploy-backend:
+    name: Deploy Backend (Render)
+    needs: [ backend-ci, frontend-ci ]
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Trigger Render Deploy Hook
+        env:
+          RENDER_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$RENDER_HOOK" ]; then
+            echo "### ⚠️ Render Deploy Hook Secret Not Configured" >> $GITHUB_STEP_SUMMARY
+            echo "To enable automatic backend deployments on Render:" >> $GITHUB_STEP_SUMMARY
+            echo "1. Go to your Render Dashboard -> Backend Service -> **Settings**" >> $GITHUB_STEP_SUMMARY
+            echo "2. Copy the **Deploy Hook URL**" >> $GITHUB_STEP_SUMMARY
+            echo "3. Add it as a GitHub Secret named \`RENDER_DEPLOY_HOOK_URL\` in **Repository Settings -> Secrets and variables -> Actions**." >> $GITHUB_STEP_SUMMARY
+            echo "Deployment step skipped safely without failing CI."
+          else
+            echo "Triggering Render deployment webhook..."
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$RENDER_HOOK")
+            if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+              echo "✅ Render deployment triggered successfully (HTTP $HTTP_STATUS)!"
+              echo "### ✅ Render Deployment Triggered" >> $GITHUB_STEP_SUMMARY
+              echo "Backend build has been initiated on Render." >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ Render deploy hook responded with HTTP $HTTP_STATUS"
+              exit 1
+            fi
+          fi
+
+  # =========================================================================
+  # 4. CONTINUOUS DEPLOYMENT: Vercel Frontend
+  # =========================================================================
+  deploy-frontend:
+    name: Deploy Frontend (Vercel)
+    needs: [ backend-ci, frontend-ci ]
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "### ⚠️ Vercel Deployment Secrets Not Configured" >> $GITHUB_STEP_SUMMARY
+            echo "To enable automatic frontend deployments to Vercel:" >> $GITHUB_STEP_SUMMARY
+            echo "1. Retrieve your \`VERCEL_TOKEN\` from https://vercel.com/account/tokens" >> $GITHUB_STEP_SUMMARY
+            echo "2. Retrieve your \`VERCEL_ORG_ID\` and \`VERCEL_PROJECT_ID\` from your \`.vercel/project.json\` or Vercel Project Settings." >> $GITHUB_STEP_SUMMARY
+            echo "3. Add them in GitHub **Repository Settings -> Secrets and variables -> Actions**." >> $GITHUB_STEP_SUMMARY
+            echo "Deployment step skipped safely without failing CI."
+          else
+            echo "Deploying frontend to Vercel production..."
+            npx vercel --prod --token="$VERCEL_TOKEN" --yes
+            echo "### ✅ Vercel Deployment Completed" >> $GITHUB_STEP_SUMMARY
+          fi

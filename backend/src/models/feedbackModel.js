@@ -271,4 +271,22 @@ export const FeedbackModel = {
       needs_action_count: needsActionCount,
     };
   },
+
+  /**
+   * Delete a feedback record by ID
+   */
+  async deleteById(id) {
+    const text = `DELETE FROM feedback WHERE id = $1 RETURNING id;`;
+    const result = await query(text, [id]);
+    return result.rows[0] || null;
+  },
+
+  /**
+   * Update the starred/favorite status of a feedback record
+   */
+  async updateStarred(id, starred) {
+    const text = `UPDATE feedback SET starred = $1 WHERE id = $2 RETURNING id, starred;`;
+    const result = await query(text, [starred, id]);
+    return result.rows[0] || null;
+  },
 };

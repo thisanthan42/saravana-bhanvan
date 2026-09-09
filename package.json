@@ -13,7 +13,9 @@
     "build": "npm run build --workspace=frontend",
     "test": "npm run test --workspace=backend",
     "test:all": "npm run test-all --workspace=backend",
-    "migrate": "npm run migrate --workspace=backend"
+    "migrate": "npm run migrate --workspace=backend",
+    "ci:backend": "npm test --workspace=backend",
+    "ci:frontend": "npm run build --workspace=frontend"
   },
   "keywords": [
     "hotel",

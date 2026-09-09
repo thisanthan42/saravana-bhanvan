@@ -40,10 +40,43 @@ function extractQRToken() {
 export default function App() {
   // Navigation State
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
+  // Start as false — require explicit login click. Don't auto-login from stale localStorage.
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  // On mount, validate any existing token with the server
+  useEffect(() => {
+    const token = managerStorage.getToken();
+    if (token && (window.location.pathname.startsWith('/manager') || window.location.pathname.startsWith('/admin'))) {
+      // Validate token against the server
+      fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/manager/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => {
+          if (res.ok) {
+            setIsAuthenticated(true);
+          } else {
+            // Token is stale/invalid — clear it
+            managerStorage.clearToken();
+            setIsAuthenticated(false);
+          }
+        })
+        .catch(() => {
+          managerStorage.clearToken();
+          setIsAuthenticated(false);
+        })
+        .finally(() => setAuthChecked(true));
+    } else {
+      if (!token) managerStorage.clearToken();
+      setAuthChecked(true);
+    }
+  }, []);
 
   // Listen to browser popstate (back/forward navigation)
   useEffect(() => {
-    const handlePopState = () => setCurrentPath(window.location.pathname);
+    const handlePopState = () => {
+      setCurrentPath(window.location.pathname);
+    };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
@@ -55,90 +88,45 @@ export default function App() {
   };
 
   // ====================================================================
-  // ROUTE 1: SUPER ADMIN LOGIN (/admin/login)
+  // UNIFIED MANAGER PORTAL: /manager (and any legacy /manager/*, /admin/*)
+  // Single endpoint: Unauthenticated -> Login; Authenticated -> Dashboard
   // ====================================================================
-  if (currentPath === '/admin/login') {
-    const mgr = managerStorage.getManager();
-    if (managerStorage.getToken() && (mgr?.role === 'super_admin' || mgr?.role === 'owner')) {
+  if (currentPath.startsWith('/manager') || currentPath.startsWith('/admin')) {
+    // Show loading while validating existing token
+    if (!authChecked) {
       return (
-        <SuperAdminDashboard
-          onNavigateToManager={() => navigateTo('/manager/dashboard')}
-          onNavigateToQR={() => navigateTo('/manager/qr')}
-          onLogout={() => navigateTo('/admin/login')}
-        />
+        <div className="min-h-screen bg-stone-100 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-10 h-10 mx-auto border-4 border-amber-700 border-t-transparent rounded-full animate-spin mb-3" />
+            <p className="text-sm font-semibold text-stone-600">Verifying session...</p>
+          </div>
+        </div>
       );
     }
-    return <ManagerLogin onLoginSuccess={() => navigateTo('/admin/dashboard')} />;
-  }
 
-  // ====================================================================
-  // ROUTE 2: PROTECTED SUPER ADMIN CONTROL PANEL (/admin, /admin/dashboard, /admin/*)
-  // ====================================================================
-  if (currentPath.startsWith('/admin')) {
-    if (!managerStorage.getToken()) {
-      return <ManagerLogin onLoginSuccess={() => navigateTo('/admin/dashboard')} />;
-    }
-    const mgr = managerStorage.getManager();
-    if (mgr?.role !== 'super_admin' && mgr?.role !== 'owner') {
+    if (!isAuthenticated) {
       return (
-        <ManagerDashboard
-          onNavigateToQR={() => navigateTo('/manager/qr')}
-          onNavigateToAdmin={() => navigateTo('/admin/dashboard')}
-          onLogout={() => navigateTo('/manager/login')}
+        <ManagerLogin
+          onLoginSuccess={() => {
+            setIsAuthenticated(true);
+            navigateTo('/manager');
+          }}
         />
       );
-    }
-    return (
-      <SuperAdminDashboard
-        onNavigateToManager={() => navigateTo('/manager/dashboard')}
-        onNavigateToQR={() => navigateTo('/manager/qr')}
-        onLogout={() => navigateTo('/admin/login')}
-      />
-    );
-  }
-
-  // ====================================================================
-  // ROUTE 3: MANAGER LOGIN (/manager/login)
-  // ====================================================================
-  if (currentPath === '/manager/login') {
-    return <ManagerLogin onLoginSuccess={() => navigateTo('/manager/dashboard')} />;
-  }
-
-  // ====================================================================
-  // ROUTE 4: PROTECTED QR MANAGEMENT (/manager/qr)
-  // ====================================================================
-  if (currentPath === '/manager/qr') {
-    if (!managerStorage.getToken()) {
-      return <ManagerLogin onLoginSuccess={() => navigateTo('/manager/qr')} />;
-    }
-    return (
-      <QRManagement
-        onNavigateToDashboard={() => navigateTo('/manager/dashboard')}
-        onLogout={() => navigateTo('/manager/login')}
-      />
-    );
-  }
-
-  // ====================================================================
-  // ROUTE 5: PROTECTED MANAGER DASHBOARD (/manager/dashboard or /manager)
-  // ====================================================================
-  if (currentPath.startsWith('/manager')) {
-    // If unauthenticated, redirect to login
-    if (!managerStorage.getToken()) {
-      return <ManagerLogin onLoginSuccess={() => navigateTo('/manager/dashboard')} />;
     }
     return (
       <ManagerDashboard
-        onNavigateToQR={() => navigateTo('/manager/qr')}
-        onNavigateToAdmin={() => navigateTo('/admin/dashboard')}
-        onLogout={() => navigateTo('/manager/login')}
+        onLogout={() => {
+          managerStorage.clearToken();
+          setIsAuthenticated(false);
+          navigateTo('/manager');
+        }}
       />
     );
   }
 
   // ====================================================================
-  // ROUTE 4: DEFAULT CUSTOMER FEEDBACK EXPERIENCE (/, /feedback, /q/:token)
-  // 100% UNCHANGED, APPROVED EXPERIENCE
+  // DEFAULT CUSTOMER FEEDBACK EXPERIENCE (/, /feedback, /q/:token)
   // ====================================================================
   return <CustomerFeedbackApp />;
 }
@@ -324,6 +312,25 @@ function CustomerFeedbackApp() {
     Object.values(specificRatings).filter(Boolean).length;
   const progressPercent = Math.round((answeredCount / totalRequired) * 100);
 
+  const handleResetFeedback = () => {
+    clearSessionFeedback();
+    setOverallRating(0);
+    setSpecificRatings({
+      service: '',
+      cleanliness: '',
+      toilet: '',
+      parking: '',
+      food: '',
+      staffBehaviour: '',
+    });
+    setComment('');
+    setValidationErrors([]);
+    setApiError('');
+    setIsSubmitted(false);
+    setSubmissionData(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-hotel-warmBg">
       {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
@@ -331,7 +338,7 @@ function CustomerFeedbackApp() {
 
       <main className="flex-grow">
         {isSubmitted ? (
-          <ThankYouScreen submissionData={submissionData} />
+          <ThankYouScreen submissionData={submissionData} onReset={handleResetFeedback} />
         ) : (
           <div className="max-w-xl mx-auto px-4 py-5 sm:py-7">
             {/* Feedback Form Section (Opens directly with no quote/hero) */}

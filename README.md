@@ -1,8 +1,10 @@
-﻿# Saravana Bhavan Hotel Customer Feedback SaaS Platform
+# Saravana Bhavan Hotel Customer Feedback SaaS Platform
 
 A production-ready, full-stack, enterprise Customer Feedback SaaS platform built for Saravana Bhavan Hotel.
 
 Features an anonymous mobile-first dining feedback experience via table QR codes, scoped branch manager analytics dashboards, and a complete Platform Owner Super Admin control center.
+
+[![Saravana Bhavan Enterprise CI/CD](https://github.com/thisanthan42/saravana-bhanvan/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/thisanthan42/saravana-bhanvan/actions/workflows/ci-cd.yml)
 
 ---
 
@@ -130,3 +132,17 @@ npm run migrate
 # Run production frontend build:
 npm run build
 ```
+
+---
+
+## 🔄 Automated CI/CD Pipeline (GitHub Actions)
+
+The repository includes a production-grade automated CI/CD pipeline configured at [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml):
+
+- **Backend CI**: Runs on Ubuntu with a live **PostgreSQL 16 container**, executes database schema migrations, and verifies all **31 integration and security checks**.
+- **Frontend CI**: Validates dependencies and compiles the React 18 / Vite 6 distribution bundle with asset integrity checks.
+- **Continuous Deployment**:
+  - **Render**: Automatically deploys the backend container service using Render Deploy Hooks.
+  - **Vercel**: Automatically deploys the frontend SPA to Vercel's global Edge CDN.
+
+For complete setup instructions, secrets configuration, and branch protection rules, consult the **[CI/CD Setup & Operations Guide](deployment/documentation/CICD_SETUP_GUIDE.md)**.

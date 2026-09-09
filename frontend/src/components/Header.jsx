@@ -1,5 +1,5 @@
 import React from 'react';
-import { Utensils, Sparkles } from 'lucide-react';
+import { Utensils, Sparkles, Shield } from 'lucide-react';
 
 export default function Header() {
   return (
@@ -26,10 +26,21 @@ export default function Header() {
             </div>
           </div>
 
-          {/* Customer Feedback Badge (No branch or table displayed) */}
-          <div className="flex items-center gap-1.5 bg-amber-50/90 border border-amber-200/80 text-amber-900 text-xs px-3 py-1.5 rounded-full font-semibold shadow-xs">
-            <Sparkles className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-            <span>Customer Feedback</span>
+          {/* Badges & Navigation */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 bg-amber-50/90 border border-amber-200/80 text-amber-900 text-xs px-3 py-1.5 rounded-full font-semibold shadow-xs">
+              <Sparkles className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+              <span>Customer Feedback</span>
+            </div>
+
+            <a
+              href="/manager"
+              className="inline-flex items-center gap-1 text-stone-700 hover:text-amber-950 bg-stone-100 hover:bg-stone-200 px-2.5 py-1.5 rounded-full text-xs font-bold border border-stone-300 transition-colors"
+              title="Open Hotel Manager Portal"
+            >
+              <Shield className="w-3.5 h-3.5 text-amber-800" />
+              <span>Manager</span>
+            </a>
           </div>
         </div>
       </div>

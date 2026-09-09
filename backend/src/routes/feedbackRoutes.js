@@ -112,6 +112,20 @@ router.get('/manager/feedback', requireManagerAuth, FeedbackController.getAll);
 router.get('/manager/feedback/:id', requireManagerAuth, FeedbackController.getById);
 
 /**
+ * @route   DELETE /api/manager/feedback/:id
+ * @desc    Delete a feedback record by ID
+ * @access  Protected (Manager Only)
+ */
+router.delete('/manager/feedback/:id', requireManagerAuth, FeedbackController.deleteById);
+
+/**
+ * @route   PATCH /api/manager/feedback/:id/star
+ * @desc    Toggle star/favorite status on a feedback record
+ * @access  Protected (Manager Only)
+ */
+router.patch('/manager/feedback/:id/star', requireManagerAuth, FeedbackController.toggleStar);
+
+/**
  * @route   GET /api/feedback
  * @desc    Backwards-compatible alias for manager reporting
  * @access  Protected (Manager Only)
